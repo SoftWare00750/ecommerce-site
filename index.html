@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ShopIt</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="navbar">
+    <h2 class="logo">ShopIt</h2>
+
+    <nav>
+        <a href="cart.html">Cart 🛒 <span id="cart-count">0</span></a>
+        <button id="auth-btn" onclick="goToAuth()">Login</button>
+    </nav>
+</header>
+
+<section class="hero">
+    <h1>Premium Tech & Fashion</h1>
+    <p>Quality Products. Fast Delivery. Affordable Prices.</p>
+</section>
+
+<section class="products" id="product-container"></section>
+
+<script src="public/js/products.js"></script>
+<script src="public/js/main.js"></script>
+<script src="public/js/cart.js"></script>
+</body>
+</html>
