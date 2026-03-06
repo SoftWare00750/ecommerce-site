@@ -18,7 +18,30 @@ function addToCart(id, name, price) {
 
   saveCart(cart);
   updateCartCount();
-  // alert removed
+}
+
+function changeQuantity(id, delta) {
+  let cart = getCart();
+  const item = cart.find(item => item.id === id);
+
+  if (!item) return;
+
+  item.quantity += delta;
+
+  if (item.quantity <= 0) {
+    cart = cart.filter(item => item.id !== id);
+  }
+
+  saveCart(cart);
+  renderCart();
+  updateCartCount();
+}
+
+function removeFromCart(id) {
+  let cart = getCart().filter(item => item.id !== id);
+  saveCart(cart);
+  renderCart();
+  updateCartCount();
 }
 
 function updateCartCount() {
@@ -33,34 +56,33 @@ function renderCart() {
   const cartItems = document.getElementById("cart-items");
   const cartTotal = document.getElementById("cart-total");
 
-  if (!cartItems) return; // not on cart page
+  if (!cartItems) return;
 
   if (cart.length === 0) {
     cartItems.innerHTML = "<p>Your cart is empty.</p>";
-    cartTotal.textContent = "";
+    if (cartTotal) cartTotal.textContent = "";
     return;
   }
 
   cartItems.innerHTML = cart.map(item => `
     <div class="cart-item">
-      <span>${item.name}</span>
-      <span>₦${item.price.toLocaleString()} × ${item.quantity}</span>
-      <span>= ₦${(item.price * item.quantity).toLocaleString()}</span>
-      <button onclick="removeFromCart(${item.id})">Remove</button>
+      <span class="cart-item-name">${item.name}</span>
+      <span class="cart-item-price">₦${item.price.toLocaleString()}</span>
+
+      <div class="quantity-control">
+        <button class="qty-btn" onclick="changeQuantity(${item.id}, -1)">−</button>
+        <span class="qty-number">${item.quantity}</span>
+        <button class="qty-btn" onclick="changeQuantity(${item.id}, +1)">+</button>
+      </div>
+
+      <span class="cart-item-subtotal">₦${(item.price * item.quantity).toLocaleString()}</span>
+      <button class="remove-btn" onclick="removeFromCart(${item.id})">Remove</button>
     </div>
   `).join("");
 
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  cartTotal.textContent = `Total: ₦${total.toLocaleString()}`;
+  if (cartTotal) cartTotal.textContent = `Total: ₦${total.toLocaleString()}`;
 }
 
-function removeFromCart(id) {
-  let cart = getCart().filter(item => item.id !== id);
-  saveCart(cart);
-  renderCart();
-  updateCartCount();
-}
-
-// Run on cart page load
 renderCart();
 updateCartCount();
