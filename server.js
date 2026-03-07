@@ -11,52 +11,91 @@ app.use(express.static(__dirname));
 const productsPath = path.join(__dirname, "data/products.json");
 const usersPath = path.join(__dirname, "data/users.json");
 
+// Ensure data/users.json exists and is valid on startup
+function ensureUsersFile() {
+  const dir = path.join(__dirname, "data");
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+  if (!fs.existsSync(usersPath)) {
+    fs.writeFileSync(usersPath, "[]");
+  } else {
+    try {
+      JSON.parse(fs.readFileSync(usersPath, "utf8"));
+    } catch {
+      // File exists but is corrupted — reset it
+      fs.writeFileSync(usersPath, "[]");
+    }
+  }
+}
+
+ensureUsersFile();
+
 /* ===============================
    PRODUCTS ROUTES
 ================================ */
 
-// Get all products
 app.get("/api/products", (req, res) => {
-  const products = JSON.parse(fs.readFileSync(productsPath));
-  res.json(products);
+  try {
+    const products = JSON.parse(fs.readFileSync(productsPath, "utf8"));
+    res.json(products);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to load products." });
+  }
 });
 
 /* ===============================
    AUTH ROUTES
 ================================ */
 
-// Signup
 app.post("/api/signup", (req, res) => {
   const { username, password } = req.body;
 
   if (!username || !password)
-    return res.status(400).json({ message: "All fields required" });
+    return res.status(400).json({ message: "Username and password are required." });
 
-  const users = JSON.parse(fs.readFileSync(usersPath));
+  if (username.length < 3)
+    return res.status(400).json({ message: "Username must be at least 3 characters." });
 
-  const existingUser = users.find(u => u.username === username);
-  if (existingUser)
-    return res.status(409).json({ message: "User already exists" });
+  if (password.length < 6)
+    return res.status(400).json({ message: "Password must be at least 6 characters." });
+
+  let users = [];
+  try {
+    users = JSON.parse(fs.readFileSync(usersPath, "utf8"));
+  } catch {
+    users = [];
+  }
+
+  const exists = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+  if (exists)
+    return res.status(409).json({ message: "Username already taken." });
 
   users.push({ username, password });
   fs.writeFileSync(usersPath, JSON.stringify(users, null, 2));
 
-  res.status(201).json({ message: "User created successfully" });
+  res.status(201).json({ message: "Account created successfully!" });
 });
 
-// Login
 app.post("/api/login", (req, res) => {
   const { username, password } = req.body;
 
-  const users = JSON.parse(fs.readFileSync(usersPath));
+  if (!username || !password)
+    return res.status(400).json({ message: "Username and password are required." });
+
+  let users = [];
+  try {
+    users = JSON.parse(fs.readFileSync(usersPath, "utf8"));
+  } catch {
+    return res.status(500).json({ message: "Server error. Please try again." });
+  }
+
   const user = users.find(
-    u => u.username === username && u.password === password
+    u => u.username.toLowerCase() === username.toLowerCase() && u.password === password
   );
 
   if (!user)
-    return res.status(401).json({ message: "Invalid credentials" });
+    return res.status(401).json({ message: "Incorrect username or password." });
 
-  res.json({ message: "Login successful" });
+  res.json({ message: "Login successful", username: user.username });
 });
 
 /* ===============================
@@ -64,5 +103,5 @@ app.post("/api/login", (req, res) => {
 ================================ */
 
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`✅ ShopIt server running at http://localhost:${PORT}`);
 });

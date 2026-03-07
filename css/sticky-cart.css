@@ -1,0 +1,289 @@
+/* =============================================
+   STICKY CART — append to css/style.css
+   OR save as css/sticky-cart.css and link it
+============================================= */
+
+/* ---- Floating cart bubble (bottom-right) ---- */
+#cart-bubble {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4f46e5, #9333ea);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1100;
+  box-shadow: 0 6px 24px rgba(79, 70, 229, 0.45);
+  transition: transform 0.2s, box-shadow 0.2s, opacity 0.3s;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#cart-bubble.has-items {
+  opacity: 1;
+  pointer-events: all;
+}
+
+#cart-bubble:hover {
+  transform: scale(1.08);
+  box-shadow: 0 8px 30px rgba(79, 70, 229, 0.55);
+}
+
+#cart-bubble.cart-open {
+  transform: rotate(10deg) scale(1.05);
+}
+
+.cart-bubble-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.cart-bubble-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #ef4444;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border: 2px solid white;
+}
+
+/* ---- Sticky bar ---- */
+#sticky-cart-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(12, 12, 18, 0.78);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 1000;
+  transform: translateY(100%);
+  transition: transform 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.3);
+}
+
+#sticky-cart-bar.visible {
+  transform: translateY(0);
+}
+
+#sticky-cart-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 14px 32px 20px;
+}
+
+/* ---- Header row with title + close ---- */
+#sticky-cart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+#sticky-cart-title {
+  color: white;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+#sticky-close-btn {
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.8);
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.2s, color 0.2s;
+  line-height: 1;
+}
+
+#sticky-close-btn:hover {
+  background: rgba(255,255,255,0.2);
+  color: white;
+}
+
+/* ---- Items row ---- */
+#sticky-cart-items {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 12px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.2) transparent;
+}
+
+#sticky-cart-items::-webkit-scrollbar { height: 4px; }
+#sticky-cart-items::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.2);
+  border-radius: 4px;
+}
+
+.sticky-item {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.sticky-item-img-wrap {
+  position: relative;
+  width: 70px;
+  height: 70px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1.5px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.06);
+}
+
+.sticky-item-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.sticky-remove-btn {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(220, 38, 38, 0.9);
+  color: white;
+  border: none;
+  font-size: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  z-index: 2;
+  transition: background 0.2s;
+  line-height: 1;
+}
+
+.sticky-remove-btn:hover { background: #dc2626; }
+
+.sticky-qty-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(0,0,0,0.6);
+  padding: 2px 4px;
+}
+
+.sticky-qty-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 15px;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+  transition: opacity 0.15s;
+}
+
+.sticky-qty-btn:hover { opacity: 0.7; }
+
+.sticky-qty-num {
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  min-width: 14px;
+  text-align: center;
+}
+
+.sticky-item-label {
+  color: rgba(255,255,255,0.65);
+  font-size: 10px;
+  text-align: center;
+  max-width: 70px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- Footer: totals + checkout btn ---- */
+#sticky-cart-footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 12px;
+}
+
+#sticky-cart-totals {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.sticky-total-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.55);
+}
+
+.sticky-total-amount { white-space: nowrap; }
+
+.sticky-grand-total {
+  font-size: 14px;
+  color: white;
+  margin-top: 5px;
+}
+
+#checkout-btn {
+  background: linear-gradient(135deg, #4f46e5, #9333ea);
+  color: white;
+  border: none;
+  padding: 12px 26px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.2s, transform 0.15s;
+  box-shadow: 0 4px 18px rgba(79, 70, 229, 0.4);
+}
+
+#checkout-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+/* Keep bubble above bar */
+#cart-bubble {
+  z-index: 1100;
+}

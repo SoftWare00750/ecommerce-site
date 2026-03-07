@@ -10,7 +10,7 @@ async function fetchProducts() {
     card.classList.add("product-card");
 
     card.innerHTML = `
-      <img src="${product.image}" />
+      <img src="${product.image}" alt="${product.name}" />
       <h3>${product.name}</h3>
       <p>₦${product.price.toLocaleString()}</p>
       <div id="card-control-${product.id}">
@@ -27,11 +27,7 @@ function getCardControl(id, name, price) {
   const item = cart.find(i => i.id === id);
 
   if (!item || item.quantity === 0) {
-    return `
-      <button onclick="cardAdd(${id}, '${name}', ${price})">
-        Add to Cart
-      </button>
-    `;
+    return `<button onclick="cardAdd(${id}, '${name}', ${price})">Add to Cart</button>`;
   }
 
   return `
@@ -52,6 +48,7 @@ function cardAdd(id, name, price) {
   addToCart(id, name, price);
   refreshCardControl(id, name, price);
   renderStickyCart();
+  showStickyCart();
 }
 
 function cardChange(id, name, price, delta) {
@@ -61,10 +58,34 @@ function cardChange(id, name, price, delta) {
 }
 
 /* =============================================
+   AUTH NAV — show username or Login button
+============================================= */
+function updateAuthNav() {
+  const authBtn = document.getElementById("auth-btn");
+  if (!authBtn) return;
+  const user = sessionStorage.getItem("loggedInUser");
+  if (user) {
+    authBtn.textContent = `👤 ${user}`;
+    authBtn.onclick = logout;
+  } else {
+    authBtn.textContent = "Login";
+    authBtn.onclick = goToAuth;
+  }
+}
+
+function goToAuth() {
+  window.location.href = "auth.html";
+}
+
+function logout() {
+  sessionStorage.removeItem("loggedInUser");
+  sessionStorage.removeItem("loggedIn");
+  updateAuthNav();
+}
+
+/* =============================================
    STICKY CART BAR
 ============================================= */
-
-// Product image map — matches data/products.json
 const productImages = {
   1: "images/appleiphone14.jpg",
   2: "images/nikeairjordan5retro.png",
@@ -74,16 +95,34 @@ const productImages = {
   6: "images/genericsmartwatch2.jpg"
 };
 
+let cartVisible = false;
+
 function createStickyCart() {
+  // Floating cart bubble (always visible when cart has items)
+  const bubble = document.createElement("div");
+  bubble.id = "cart-bubble";
+  bubble.title = "View cart";
+  bubble.innerHTML = `
+    <span class="cart-bubble-icon">🛒</span>
+    <span id="cart-bubble-count" class="cart-bubble-badge">0</span>
+  `;
+  bubble.addEventListener("click", toggleStickyCart);
+  document.body.appendChild(bubble);
+
+  // Sticky bar
   const bar = document.createElement("div");
   bar.id = "sticky-cart-bar";
   bar.innerHTML = `
     <div id="sticky-cart-inner">
+      <div id="sticky-cart-header">
+        <span id="sticky-cart-title">🛒 Your Cart</span>
+        <button id="sticky-close-btn" title="Hide cart" onclick="hideStickyCart()">✕</button>
+      </div>
       <div id="sticky-cart-items"></div>
       <div id="sticky-cart-footer">
         <div id="sticky-cart-totals"></div>
         <button id="checkout-btn" onclick="window.location.href='checkout.html'">
-          Proceed to Checkout &rarr;
+          Proceed to Checkout →
         </button>
       </div>
     </div>
@@ -91,23 +130,51 @@ function createStickyCart() {
   document.body.appendChild(bar);
 }
 
+function showStickyCart() {
+  const cart = getCart();
+  if (cart.length === 0) return;
+  cartVisible = true;
+  document.getElementById("sticky-cart-bar").classList.add("visible");
+  document.getElementById("cart-bubble").classList.add("cart-open");
+}
+
+function hideStickyCart() {
+  cartVisible = false;
+  document.getElementById("sticky-cart-bar").classList.remove("visible");
+  document.getElementById("cart-bubble").classList.remove("cart-open");
+}
+
+function toggleStickyCart() {
+  if (cartVisible) {
+    hideStickyCart();
+  } else {
+    showStickyCart();
+  }
+}
+
 function renderStickyCart() {
   const cart = getCart();
   const bar = document.getElementById("sticky-cart-bar");
-  if (!bar) return;
+  const bubble = document.getElementById("cart-bubble");
+  const bubbleCount = document.getElementById("cart-bubble-count");
+  if (!bar || !bubble) return;
+
+  const totalCount = cart.reduce((s, i) => s + i.quantity, 0);
+  if (bubbleCount) bubbleCount.textContent = totalCount;
 
   if (cart.length === 0) {
-    bar.classList.remove("visible");
+    hideStickyCart();
+    bubble.classList.remove("has-items");
     return;
   }
 
-  bar.classList.add("visible");
+  bubble.classList.add("has-items");
 
   const itemsEl = document.getElementById("sticky-cart-items");
   const totalsEl = document.getElementById("sticky-cart-totals");
 
   itemsEl.innerHTML = cart.map(item => `
-    <div class="sticky-item" id="sticky-item-${item.id}">
+    <div class="sticky-item">
       <div class="sticky-item-img-wrap">
         <img src="${productImages[item.id] || ''}" alt="${item.name}" class="sticky-item-img" />
         <button class="sticky-remove-btn" onclick="stickyRemove(${item.id})" title="Remove">✕</button>
@@ -121,36 +188,31 @@ function renderStickyCart() {
     </div>
   `).join("");
 
-  const totalsHTML = cart.map(item => `
+  const rows = cart.map(item => `
     <div class="sticky-total-row">
       <span class="sticky-total-name">${item.name.split(' ').slice(0, 2).join(' ')} ×${item.quantity}</span>
       <span class="sticky-total-amount">₦${(item.price * item.quantity).toLocaleString()}</span>
     </div>
-  `).join("") + (() => {
-    const grand = cart.reduce((s, i) => s + i.price * i.quantity, 0);
-    return `<div class="sticky-grand-total">Grand Total: <strong>₦${grand.toLocaleString()}</strong></div>`;
-  })();
+  `).join("");
 
-  totalsEl.innerHTML = totalsHTML;
+  const grand = cart.reduce((s, i) => s + i.price * i.quantity, 0);
+  totalsEl.innerHTML = rows + `<div class="sticky-grand-total">Grand Total: <strong>₦${grand.toLocaleString()}</strong></div>`;
+
+  updateCartCount();
 }
 
 function stickyRemove(id) {
   removeFromCart(id);
-  // also refresh the product card button
-  const cart = getCart();
-  renderStickyCart();
-  // Refresh all card controls (we don't know the name/price easily here, re-fetch not needed — just re-render page cards)
   document.querySelectorAll("[id^='card-control-']").forEach(el => {
     const pid = parseInt(el.id.replace("card-control-", ""));
-    const cartItem = getCart().find(i => i.id === pid);
-    // Find original product data from DOM
+    if (pid !== id) return;
     const card = el.closest(".product-card");
     if (!card) return;
     const name = card.querySelector("h3").textContent;
     const priceText = card.querySelector("p").textContent.replace("₦", "").replace(/,/g, "");
-    const price = parseInt(priceText);
-    el.innerHTML = getCardControl(pid, name, price);
+    el.innerHTML = getCardControl(pid, name, parseInt(priceText));
   });
+  renderStickyCart();
 }
 
 function stickyChange(id, name, price, delta) {
@@ -163,4 +225,5 @@ function stickyChange(id, name, price, delta) {
 createStickyCart();
 fetchProducts();
 updateCartCount();
+updateAuthNav();
 renderStickyCart();
