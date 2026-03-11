@@ -1,29 +1,42 @@
 const API_URL = "/api/products";
 const container = document.getElementById("product-container");
 
+// --- SAFETY HELPERS (In case cart.js isn't loaded yet) ---
+const _getCart = () => {
+  try {
+    return (typeof getCart === 'function') ? getCart() : JSON.parse(localStorage.getItem("cart")) || [];
+  } catch (e) { return []; }
+};
+
 async function fetchProducts() {
-  const res = await fetch(API_URL);
-  const products = await res.json();
+  try {
+    const res = await fetch(API_URL);
+    const products = await res.json();
 
-  products.forEach(product => {
-    const card = document.createElement("div");
-    card.classList.add("product-card");
+    if (!container) return;
+    container.innerHTML = ""; // Clear loader if any
 
-    card.innerHTML = `
-      <img src="${product.image}" alt="${product.name}" />
-      <h3>${product.name}</h3>
-      <p>₦${product.price.toLocaleString()}</p>
-      <div id="card-control-${product.id}">
-        ${getCardControl(product.id, product.name, product.price)}
-      </div>
-    `;
+    products.forEach(product => {
+      const card = document.createElement("div");
+      card.classList.add("product-card");
 
-    container.appendChild(card);
-  });
+      card.innerHTML = `
+        <img src="${product.image}" alt="${product.name}" />
+        <h3>${product.name}</h3>
+        <p>₦${product.price.toLocaleString()}</p>
+        <div id="card-control-${product.id}">
+          ${getCardControl(product.id, product.name, product.price)}
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  } catch (err) {
+    console.error("Failed to load products:", err);
+  }
 }
 
 function getCardControl(id, name, price) {
-  const cart = getCart();
+  const cart = _getCart();
   const item = cart.find(i => i.id === id);
 
   if (!item || item.quantity === 0) {
@@ -45,20 +58,20 @@ function refreshCardControl(id, name, price) {
 }
 
 function cardAdd(id, name, price) {
-  addToCart(id, name, price);
+  if (typeof addToCart === 'function') addToCart(id, name, price);
   refreshCardControl(id, name, price);
   renderStickyCart();
   showStickyCart();
 }
 
 function cardChange(id, name, price, delta) {
-  changeQuantity(id, delta);
+  if (typeof changeQuantity === 'function') changeQuantity(id, delta);
   refreshCardControl(id, name, price);
   renderStickyCart();
 }
 
 /* =============================================
-   AUTH NAV — show username or Login button
+   AUTH NAV
 ============================================= */
 function updateAuthNav() {
   const authBtn = document.getElementById("auth-btn");
@@ -73,10 +86,7 @@ function updateAuthNav() {
   }
 }
 
-function goToAuth() {
-  window.location.href = "auth.html";
-}
-
+function goToAuth() { window.location.href = "auth.html"; }
 function logout() {
   sessionStorage.removeItem("loggedInUser");
   sessionStorage.removeItem("loggedIn");
@@ -98,18 +108,21 @@ const productImages = {
 let cartVisible = false;
 
 function createStickyCart() {
-  // Floating cart bubble (always visible when cart has items)
+  // Use safety helper to get count without crashing
+  const cart = _getCart();
+  const initialCount = cart.reduce((s, i) => s + i.quantity, 0);
+
   const bubble = document.createElement("div");
   bubble.id = "cart-bubble";
+  bubble.classList.add("has-items"); // Always visible
   bubble.title = "View cart";
   bubble.innerHTML = `
     <span class="cart-bubble-icon">🛒</span>
-    <span id="cart-bubble-count" class="cart-bubble-badge">0</span>
+    <span id="cart-bubble-count" class="cart-bubble-badge">${initialCount}</span>
   `;
   bubble.addEventListener("click", toggleStickyCart);
   document.body.appendChild(bubble);
 
-  // Sticky bar
   const bar = document.createElement("div");
   bar.id = "sticky-cart-bar";
   bar.innerHTML = `
@@ -131,7 +144,7 @@ function createStickyCart() {
 }
 
 function showStickyCart() {
-  const cart = getCart();
+  const cart = _getCart();
   if (cart.length === 0) return;
   cartVisible = true;
   document.getElementById("sticky-cart-bar").classList.add("visible");
@@ -140,20 +153,16 @@ function showStickyCart() {
 
 function hideStickyCart() {
   cartVisible = false;
-  document.getElementById("sticky-cart-bar").classList.remove("visible");
-  document.getElementById("cart-bubble").classList.remove("cart-open");
+  document.getElementById("sticky-cart-bar")?.classList.remove("visible");
+  document.getElementById("cart-bubble")?.classList.remove("cart-open");
 }
 
 function toggleStickyCart() {
-  if (cartVisible) {
-    hideStickyCart();
-  } else {
-    showStickyCart();
-  }
+  cartVisible ? hideStickyCart() : showStickyCart();
 }
 
 function renderStickyCart() {
-  const cart = getCart();
+  const cart = _getCart();
   const bar = document.getElementById("sticky-cart-bar");
   const bubble = document.getElementById("cart-bubble");
   const bubbleCount = document.getElementById("cart-bubble-count");
@@ -164,11 +173,9 @@ function renderStickyCart() {
 
   if (cart.length === 0) {
     hideStickyCart();
-    bubble.classList.remove("has-items");
+    bubble.classList.add("has-items");
     return;
   }
-
-  bubble.classList.add("has-items");
 
   const itemsEl = document.getElementById("sticky-cart-items");
   const totalsEl = document.getElementById("sticky-cart-totals");
@@ -188,42 +195,28 @@ function renderStickyCart() {
     </div>
   `).join("");
 
-  const rows = cart.map(item => `
-    <div class="sticky-total-row">
-      <span class="sticky-total-name">${item.name.split(' ').slice(0, 2).join(' ')} ×${item.quantity}</span>
-      <span class="sticky-total-amount">₦${(item.price * item.quantity).toLocaleString()}</span>
-    </div>
-  `).join("");
-
   const grand = cart.reduce((s, i) => s + i.price * i.quantity, 0);
-  totalsEl.innerHTML = rows + `<div class="sticky-grand-total">Grand Total: <strong>₦${grand.toLocaleString()}</strong></div>`;
+  totalsEl.innerHTML = `<div class="sticky-grand-total">Total: <strong>₦${grand.toLocaleString()}</strong></div>`;
 
-  updateCartCount();
+  if (typeof updateCartCount === 'function') updateCartCount();
 }
 
 function stickyRemove(id) {
-  removeFromCart(id);
-  document.querySelectorAll("[id^='card-control-']").forEach(el => {
-    const pid = parseInt(el.id.replace("card-control-", ""));
-    if (pid !== id) return;
-    const card = el.closest(".product-card");
-    if (!card) return;
-    const name = card.querySelector("h3").textContent;
-    const priceText = card.querySelector("p").textContent.replace("₦", "").replace(/,/g, "");
-    el.innerHTML = getCardControl(pid, name, parseInt(priceText));
-  });
+  if (typeof removeFromCart === 'function') removeFromCart(id);
   renderStickyCart();
 }
 
 function stickyChange(id, name, price, delta) {
-  changeQuantity(id, delta);
+  if (typeof changeQuantity === 'function') changeQuantity(id, delta);
   refreshCardControl(id, name, price);
   renderStickyCart();
 }
 
-// Init
-createStickyCart();
+/* =============================================
+   INIT
+============================================= */
+// We call fetchProducts first so content starts loading 
 fetchProducts();
-updateCartCount();
+createStickyCart();
 updateAuthNav();
 renderStickyCart();
