@@ -1,67 +1,58 @@
-// src/store/authStore.js
+// src/store/cartStore.js
+// Simple module-level store with subscriber pattern (no external libs needed)
 
 import { useState, useEffect } from "react";
 
-const USERS_KEY   = "shopit_users";
-const SESSION_KEY = "shopit_session";
+const CART_KEY = "shopit_cart";
 
-function loadUsers() {
-  try { return JSON.parse(localStorage.getItem(USERS_KEY) || "[]"); }
+function loadCart() {
+  try { return JSON.parse(localStorage.getItem(CART_KEY) || "[]"); }
   catch { return []; }
 }
-function saveUsers(users) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-}
-function loadSession() {
-  return localStorage.getItem(SESSION_KEY) || null;
-}
-function saveSession(username) {
-  if (username) localStorage.setItem(SESSION_KEY, username);
-  else localStorage.removeItem(SESSION_KEY);
+
+function saveCart(cart) {
+  localStorage.setItem(CART_KEY, JSON.stringify(cart));
 }
 
-let _user = loadSession();
+// Shared state across all consumers
+let _cart = loadCart();
 let _listeners = [];
 
 function notify() {
-  _listeners.forEach(fn => fn(_user));
+  _listeners.forEach(fn => fn([..._cart]));
 }
 
-export const authStore = {
-  getUser: () => _user,
+export const cartStore = {
+  getCart: () => _cart,
 
-  signup({ username, password }) {
-    if (!username || !password)     return { ok: false, message: "Please fill in all fields." };
-    if (username.trim().length < 3) return { ok: false, message: "Username must be at least 3 characters." };
-    if (password.length < 6)        return { ok: false, message: "Password must be at least 6 characters." };
-
-    const users = loadUsers();
-    if (users.find(u => u.username.toLowerCase() === username.toLowerCase()))
-      return { ok: false, message: "Username already taken." };
-
-    users.push({ username: username.trim(), password });
-    saveUsers(users);
-    return { ok: true, message: "Account created! You can now log in." };
-  },
-
-  login({ username, password }) {
-    if (!username || !password) return { ok: false, message: "Please fill in all fields." };
-
-    const users = loadUsers();
-    const user  = users.find(
-      u => u.username.toLowerCase() === username.toLowerCase() && u.password === password
-    );
-    if (!user) return { ok: false, message: "Incorrect username or password." };
-
-    _user = user.username;
-    saveSession(_user);
+  addItem(product) {
+    const existing = _cart.find(i => i.id === product.id);
+    if (existing) {
+      _cart = _cart.map(i => i.id === product.id ? { ...i, quantity: i.quantity + 1 } : i);
+    } else {
+      _cart = [..._cart, { id: product.id, name: product.name, price: product.price, quantity: 1 }];
+    }
+    saveCart(_cart);
     notify();
-    return { ok: true, message: "Login successful!" };
   },
 
-  logout() {
-    _user = null;
-    saveSession(null);
+  changeQuantity(id, delta) {
+    _cart = _cart
+      .map(i => i.id === id ? { ...i, quantity: i.quantity + delta } : i)
+      .filter(i => i.quantity > 0);
+    saveCart(_cart);
+    notify();
+  },
+
+  removeItem(id) {
+    _cart = _cart.filter(i => i.id !== id);
+    saveCart(_cart);
+    notify();
+  },
+
+  clearCart() {
+    _cart = [];
+    saveCart(_cart);
     notify();
   },
 
@@ -71,19 +62,25 @@ export const authStore = {
   },
 };
 
-// Custom hook
-export function useAuth() {
-  const [user, setUser] = useState(authStore.getUser());
+// Custom hook for components
+export function useCart() {
+  const [cart, setCart] = useState(cartStore.getCart());
 
   useEffect(() => {
-    const unsub = authStore.subscribe(setUser);
+    const unsub = cartStore.subscribe(setCart);
     return unsub;
   }, []);
 
+  const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
+  const cartTotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
+
   return {
-    user,
-    login:  (creds) => authStore.login(creds),
-    signup: (creds) => authStore.signup(creds),
-    logout: ()      => authStore.logout(),
+    cart,
+    cartCount,
+    cartTotal,
+    addItem:        (p) => cartStore.addItem(p),
+    changeQuantity: (id, delta) => cartStore.changeQuantity(id, delta),
+    removeItem:     (id) => cartStore.removeItem(id),
+    clearCart:      () => cartStore.clearCart(),
   };
 }

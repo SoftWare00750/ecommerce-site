@@ -1,0 +1,124 @@
+/* src/components/cart/CartPanel.module.css */
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 12px;
+  color: var(--muted);
+  text-align: center;
+  font-size: 15px;
+  line-height: 1.6;
+}
+.emptyIcon { font-size: 56px; }
+
+/* Cart row */
+.row {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 14px;
+  border-radius: 10px;
+  background: var(--paper);
+  border: 1.5px solid var(--border);
+}
+
+.emoji {
+  font-size: 36px;
+  flex-shrink: 0;
+  width: 48px;
+  text-align: center;
+  padding-top: 2px;
+}
+
+.info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+
+.name {
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.unitPrice { font-size: 12px; color: var(--muted); }
+
+.qty {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1.5px solid var(--border);
+  border-radius: 7px;
+  padding: 3px 8px;
+  margin-top: 4px;
+}
+.qty button {
+  background: none;
+  border: none;
+  font-size: 17px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: var(--ink);
+  transition: background .15s;
+}
+.qty button:hover { background: var(--cream); }
+.qty span { font-weight: 700; font-size: 14px; min-width: 18px; text-align: center; }
+
+.right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.subtotal { font-weight: 700; font-size: 14px; white-space: nowrap; }
+
+.removeBtn {
+  background: none;
+  border: none;
+  font-size: 17px;
+  color: #e53e3e;
+  padding: 4px;
+  border-radius: 6px;
+  transition: background .15s;
+}
+.removeBtn:hover { background: #fff0f0; }
+
+/* Footer */
+.footer {
+  padding: 18px 28px;
+  border-top: 2px solid var(--border);
+  background: var(--white);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.totalRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 15px;
+}
+.totalRow strong { font-family: 'Syne', sans-serif; font-size: 1.2rem; }
+
+.checkoutBtn {
+  width: 100%;
+  padding: 14px;
+  background: var(--ink);
+  color: var(--white);
+  border: none;
+  border-radius: 10px;
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  transition: background .2s;
+}
+.checkoutBtn:hover { background: var(--accent); }
